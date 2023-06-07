@@ -1,0 +1,1 @@
+C:\Users\JISAAPP\IdeaProjects\minesweeper\target\debug\minesweeper.exe: C:\Users\JISAAPP\IdeaProjects\minesweeper\src\main.rs C:\Users\JISAAPP\IdeaProjects\minesweeper\src\mine-sweeper.ttf C:\Users\JISAAPP\IdeaProjects\minesweeper\src\minesweeper.rs C:\Users\JISAAPP\IdeaProjects\minesweeper\src\user_interface.rs
