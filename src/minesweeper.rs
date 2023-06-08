@@ -170,3 +170,20 @@ pub fn reveal_tile(board: &mut MinesweeperBoard, x: i32, y: i32) {
 
     return;
 }
+
+pub fn flag_tile(board: &mut MinesweeperBoard, x: i32, y: i32, mut mine_count: i32) -> i32 {
+    let mut selected_tile = board[y as usize][x as usize];
+
+    if !(selected_tile.is_revealed()) {
+        if selected_tile.is_flagged() {
+            selected_tile.set_flagged(false);
+            mine_count += 1
+        } else {
+            selected_tile.set_flagged(true);
+            mine_count -= 1;
+        }
+    }
+
+    board[y as usize][x as usize] = selected_tile;
+    return mine_count;
+}
