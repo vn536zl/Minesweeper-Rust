@@ -8,7 +8,7 @@ pub struct Tile {
     num: i32,
     flagged: bool,
     revealed: bool,
-    pos: [i32; 2]
+    pos: [i32; 2],
 }
 
 pub type MinesweeperBoard = Vec<Vec<Tile>>;
@@ -37,11 +37,17 @@ impl Tile {
     }
 
     // Setters
-    pub fn set_mine(&mut self) { self.mine = true; }
+    pub fn set_mine(&mut self) {
+        self.mine = true;
+    }
 
-    pub fn set_num(&mut self, num: i32) { self.num = num; }
+    pub fn set_num(&mut self, num: i32) {
+        self.num = num;
+    }
 
-    pub fn set_flagged(&mut self, flagged: bool) { self.flagged = flagged; }
+    pub fn set_flagged(&mut self, flagged: bool) {
+        self.flagged = flagged;
+    }
 
     pub fn reveal(&mut self) {
         if !self.revealed {
@@ -49,21 +55,31 @@ impl Tile {
         }
     }
 
-    pub fn set_pos(&mut self, pos: [i32; 2]) { self.pos = pos; }
+    pub fn set_pos(&mut self, pos: [i32; 2]) {
+        self.pos = pos;
+    }
 
     // Getters
-    pub fn has_mine(&self) -> bool { self.mine }
+    pub fn has_mine(&self) -> bool {
+        self.mine
+    }
 
-    pub fn get_num(&self) -> i32 { self.num }
+    pub fn get_num(&self) -> i32 {
+        self.num
+    }
 
-    pub fn is_flagged(&self) -> bool { self.flagged }
+    pub fn is_flagged(&self) -> bool {
+        self.flagged
+    }
 
-    pub fn is_revealed(&self) -> bool { self.revealed }
+    pub fn is_revealed(&self) -> bool {
+        self.revealed
+    }
 
-    pub fn get_pos(&self) -> [i32; 2] { self.pos }
+    pub fn get_pos(&self) -> [i32; 2] {
+        self.pos
+    }
 }
-
-
 
 pub fn build_minesweeper_board(height: i32, width: i32, mut mine_count: i32) -> MinesweeperBoard {
     let mut board: MinesweeperBoard = vec![vec![Tile::empty(); width as usize]; height as usize];
@@ -138,9 +154,123 @@ pub fn determine_tile_number(board: &mut MinesweeperBoard) {
     }
 }
 
-pub fn reveal_tile(board: &mut MinesweeperBoard, x: i32, y: i32) {
-    if y < 0 || y >= board.len() as i32 || x < 0 || x >= board[y as usize].len() as i32 || board[y as usize][x as usize].is_revealed() || board[y as usize][x as usize].has_mine() || board[y as usize][x as usize].is_flagged() {
-        return;
+pub fn cord_tile(board: &mut MinesweeperBoard, x: i32, y: i32) -> Result<bool, [i32; 2]> {
+    if board[y as usize][x as usize].get_num() == 0 {
+        return Err([-1, -1]);
+    }
+
+    let mut num_flagged = 0;
+    if y - 1 >= 0 {
+        if x - 1 >= 0 {
+            if board[(y - 1) as usize][(x - 1) as usize].is_flagged() {
+                num_flagged += 1;
+            }
+        }
+        if x + 1 < board[(y - 1) as usize].len() as i32 {
+            if board[(y - 1) as usize][(x + 1) as usize].is_flagged() {
+                num_flagged += 1;
+            }
+        }
+        if board[(y - 1) as usize][x as usize].is_flagged() {
+            num_flagged += 1;
+        }
+    }
+    if y + 1 < board.len() as i32 {
+        if x - 1 >= 0 {
+            if board[(y + 1) as usize][(x - 1) as usize].is_flagged() {
+                num_flagged += 1;
+            }
+        }
+        if x + 1 < board[(y + 1) as usize].len() as i32 {
+            if board[(y + 1) as usize][(x + 1) as usize].is_flagged() {
+                num_flagged += 1;
+            }
+        }
+        if board[(y + 1) as usize][x as usize].is_flagged() {
+            num_flagged += 1;
+        }
+    }
+    if x - 1 >= 0 {
+        if board[y as usize][(x - 1) as usize].is_flagged() {
+            num_flagged += 1;
+        }
+    }
+    if x + 1 < board[y as usize].len() as i32 {
+        if board[y as usize][(x + 1) as usize].is_flagged() {
+            num_flagged += 1;
+        }
+    }
+
+    let mut result: i32;
+    if num_flagged == board[y as usize][x as usize].get_num() {
+        if y - 1 >= 0 {
+            if x - 1 >= 0 {
+                result = reveal_tile(board, x - 1, y - 1);
+                if result == 1 {
+                    return Err([x - 1, y - 1]);
+                }
+            }
+            if x + 1 < board[(y - 1) as usize].len() as i32 {
+                result = reveal_tile(board, x + 1, y - 1);
+                if result == 1 {
+                    return Err([x + 1, y - 1]);
+                }
+            }
+            result = reveal_tile(board, x, y - 1);
+            if result == 1 {
+                return Err([x, y - 1]);
+            }
+        }
+        if y + 1 < board.len() as i32 {
+            if x - 1 >= 0 {
+                result = reveal_tile(board, x - 1, y + 1);
+                if result == 1 {
+                    return Err([x - 1, y + 1]);
+                }
+            }
+            if x + 1 < board[(y + 1) as usize].len() as i32 {
+                result = reveal_tile(board, x + 1, y + 1);
+                if result == 1 {
+                    return Err([x + 1, y + 1]);
+                }
+            }
+            result = reveal_tile(board, x, y + 1);
+            if result == 1 {
+                return Err([x, y + 1]);
+            }
+        }
+        if x - 1 >= 0 {
+            result = reveal_tile(board, x - 1, y);
+            if result == 1 {
+                return Err([x - 1, y]);
+            }
+        }
+        if x + 1 < board[y as usize].len() as i32 {
+            result = reveal_tile(board, x + 1, y);
+            if result == 1 {
+                return Err([x + 1, y]);
+            }
+        }
+    } else {
+        return Ok(false);
+    }
+
+    return Ok(true);
+}
+
+pub fn reveal_tile(board: &mut MinesweeperBoard, x: i32, y: i32) -> i32 {
+    if y < 0
+        || y >= board.len() as i32
+        || x < 0
+        || x >= board[y as usize].len() as i32
+        || board[y as usize][x as usize].is_revealed()
+        || board[y as usize][x as usize].is_flagged()
+    {
+        return 2;
+    }
+
+    if board[y as usize][x as usize].has_mine() {
+        return 1;
     }
 
     let mut tile = board[y as usize][x as usize];
@@ -149,26 +279,26 @@ pub fn reveal_tile(board: &mut MinesweeperBoard, x: i32, y: i32) {
 
     if tile.get_num() == 0 {
         // Top Left
-        reveal_tile(board, x-1, y-1);
+        reveal_tile(board, x - 1, y - 1);
         // Top
-        reveal_tile(board, x, y-1);
+        reveal_tile(board, x, y - 1);
         // Top Right
-        reveal_tile(board, x+1, y-1);
+        reveal_tile(board, x + 1, y - 1);
 
         // Left
-        reveal_tile(board, x-1, y);
+        reveal_tile(board, x - 1, y);
         // Right
-        reveal_tile(board, x+1, y);
+        reveal_tile(board, x + 1, y);
 
         // Bottom Left
-        reveal_tile(board, x-1, y+1);
+        reveal_tile(board, x - 1, y + 1);
         // Bottom
-        reveal_tile(board, x, y+1);
+        reveal_tile(board, x, y + 1);
         // Bottom Right
-        reveal_tile(board, x+1, y+1);
+        reveal_tile(board, x + 1, y + 1);
     }
 
-    return;
+    return 0;
 }
 
 pub fn flag_tile(board: &mut MinesweeperBoard, x: i32, y: i32, mut mine_count: i32) -> i32 {
