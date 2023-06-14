@@ -37,8 +37,8 @@ impl Tile {
     }
 
     // Setters
-    pub fn set_mine(&mut self) {
-        self.mine = true;
+    pub fn set_mine(&mut self, mine: bool) {
+        self.mine = mine;
     }
 
     pub fn set_num(&mut self, num: i32) {
@@ -100,7 +100,7 @@ pub fn build_minesweeper_board(height: i32, width: i32, mut mine_count: i32) -> 
             y = rand::thread_rng().gen_range(0..height);
         }
 
-        board[y as usize][x as usize].set_mine();
+        board[y as usize][x as usize].set_mine(true);
         mine_count -= 1;
         clean_tiles -= 1;
     }
@@ -155,6 +155,10 @@ pub fn determine_tile_number(board: &mut MinesweeperBoard) {
 }
 
 pub fn cord_tile(board: &mut MinesweeperBoard, x: i32, y: i32) -> Result<bool, [i32; 2]> {
+    if y < 0 || y >= board.len() as i32 || x < 0 || x >= board[y as usize].len() as i32 {
+        return Err([-1, -1]);
+    }
+
     if board[y as usize][x as usize].get_num() == 0 {
         return Err([-1, -1]);
     }
@@ -205,48 +209,48 @@ pub fn cord_tile(board: &mut MinesweeperBoard, x: i32, y: i32) -> Result<bool, [
     if num_flagged == board[y as usize][x as usize].get_num() {
         if y - 1 >= 0 {
             if x - 1 >= 0 {
-                result = reveal_tile(board, x - 1, y - 1);
+                result = reveal_tile(board, x - 1, y - 1, false);
                 if result == 1 {
                     return Err([x - 1, y - 1]);
                 }
             }
             if x + 1 < board[(y - 1) as usize].len() as i32 {
-                result = reveal_tile(board, x + 1, y - 1);
+                result = reveal_tile(board, x + 1, y - 1, false);
                 if result == 1 {
                     return Err([x + 1, y - 1]);
                 }
             }
-            result = reveal_tile(board, x, y - 1);
+            result = reveal_tile(board, x, y - 1, false);
             if result == 1 {
                 return Err([x, y - 1]);
             }
         }
         if y + 1 < board.len() as i32 {
             if x - 1 >= 0 {
-                result = reveal_tile(board, x - 1, y + 1);
+                result = reveal_tile(board, x - 1, y + 1, false);
                 if result == 1 {
                     return Err([x - 1, y + 1]);
                 }
             }
             if x + 1 < board[(y + 1) as usize].len() as i32 {
-                result = reveal_tile(board, x + 1, y + 1);
+                result = reveal_tile(board, x + 1, y + 1, false);
                 if result == 1 {
                     return Err([x + 1, y + 1]);
                 }
             }
-            result = reveal_tile(board, x, y + 1);
+            result = reveal_tile(board, x, y + 1, false);
             if result == 1 {
                 return Err([x, y + 1]);
             }
         }
         if x - 1 >= 0 {
-            result = reveal_tile(board, x - 1, y);
+            result = reveal_tile(board, x - 1, y, false);
             if result == 1 {
                 return Err([x - 1, y]);
             }
         }
         if x + 1 < board[y as usize].len() as i32 {
-            result = reveal_tile(board, x + 1, y);
+            result = reveal_tile(board, x + 1, y, false);
             if result == 1 {
                 return Err([x + 1, y]);
             }
@@ -258,44 +262,50 @@ pub fn cord_tile(board: &mut MinesweeperBoard, x: i32, y: i32) -> Result<bool, [
     return Ok(true);
 }
 
-pub fn reveal_tile(board: &mut MinesweeperBoard, x: i32, y: i32) -> i32 {
-    if y < 0
-        || y >= board.len() as i32
-        || x < 0
-        || x >= board[y as usize].len() as i32
-        || board[y as usize][x as usize].is_revealed()
-        || board[y as usize][x as usize].is_flagged()
+pub fn reveal_tile(board: &mut MinesweeperBoard, x: i32, y: i32, first_click: bool) -> i32 {
+    if y < 0 || y >= board.len() as i32
+        || x < 0 || x >= board[y as usize].len() as i32
+        || board[y as usize][x as usize].is_revealed() || board[y as usize][x as usize].is_flagged()
     {
         return 2;
     }
 
-    if board[y as usize][x as usize].has_mine() {
+    if board[y as usize][x as usize].has_mine() && !(first_click) {
         return 1;
+    } else if board[y as usize][x as usize].has_mine() && first_click {
+        for i in 0..board.len() {
+            for j in 0..board[i].len() {
+                if !(board[i][j].has_mine()) && ([j as i32, i as i32] != [x, y]) {
+                    board[i][j] = board[y as usize][x as usize];
+                    board[y as usize][x as usize].set_mine(false);
+                    determine_tile_number(board);
+                    break
+                }
+            }
+        }
     }
 
-    let mut tile = board[y as usize][x as usize];
-    tile.reveal();
-    board[y as usize][x as usize] = tile;
+    board[y as usize][x as usize].reveal();
 
-    if tile.get_num() == 0 {
+    if board[y as usize][x as usize].get_num() == 0 {
         // Top Left
-        reveal_tile(board, x - 1, y - 1);
+        reveal_tile(board, x - 1, y - 1, first_click);
         // Top
-        reveal_tile(board, x, y - 1);
+        reveal_tile(board, x, y - 1, first_click);
         // Top Right
-        reveal_tile(board, x + 1, y - 1);
+        reveal_tile(board, x + 1, y - 1, first_click);
 
         // Left
-        reveal_tile(board, x - 1, y);
+        reveal_tile(board, x - 1, y, first_click);
         // Right
-        reveal_tile(board, x + 1, y);
+        reveal_tile(board, x + 1, y, first_click);
 
         // Bottom Left
-        reveal_tile(board, x - 1, y + 1);
+        reveal_tile(board, x - 1, y + 1, first_click);
         // Bottom
-        reveal_tile(board, x, y + 1);
+        reveal_tile(board, x, y + 1, first_click);
         // Bottom Right
-        reveal_tile(board, x + 1, y + 1);
+        reveal_tile(board, x + 1, y + 1, first_click);
     }
 
     return 0;
